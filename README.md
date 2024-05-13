@@ -1,6 +1,6 @@
 # Proompt: Easy AI Proompting
 
-**Proompt**
+**Proompt**<br>
 *Verb*<br>
 The act of sending a prompt off to an LLM in the hopes that it will solve your problem instead of you having to do any real work.<br><br>
 *Why should I learn to code when I can proompt?* <br><br>
