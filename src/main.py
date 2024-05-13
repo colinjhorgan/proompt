@@ -6,9 +6,12 @@ from groq import Groq
 
 from config_utils import *
 
-client = Groq(
-    api_key=os.environ.get("GROQ_API_KEY"),
-)
+MODEL_LOOKUP = {
+    'llama-70b':'llama3-70b-8192',
+    'llama-8b':'llama3-8b-8192',
+    'mixtral':'mixtral-8x7b-32768',
+    'gemma':'gemma-7b-it',
+}
 
 def append_to_file(file_name, string_to_append):
     """
@@ -69,7 +72,7 @@ def format_buffer_contents(string, search_pattern='{{(.*?)}}' ):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--set-default-sysprompt',
+        '--set-system-prompt',
         help='Set default system prompt',
         type=str,
         metavar='',
@@ -86,30 +89,64 @@ def main():
         type=str,
         metavar='',
         required=False,)
+    parser.add_argument(
+        '--model',
+        '-m',
+        help='Model name to use for request',
+        type=str,
+        metavar='',
+        required=False,)
+    parser.add_argument(
+        '--buffer',
+        '-f',
+        help='Buffer filename to use for request',
+        type=str,
+        metavar='',
+        required=False,)
     args = parser.parse_args()
 
-    if args.set_default_sysprompt:
-        set_default_system_prompt(args.set_default_sysprompt)
+    if args.set_system_prompt:
+        set_default_system_prompt(args.set_system_prompt)
+        return
 
     if args.set_default_model:
         set_default_model(args.set_default_model)
+        return
 
     if args.set_default_buffer:
-        set_default_user_buffer(args.set_default_buffer)
+        set_default_buffer(args.set_default_buffer)
+        return
 
-    buffer_contents = parse_user_buffer('ask.md')
+    config = get_config_defaults()
+
+    if args.model:
+        config['default_model'] = args.model
+
+    if args.buffer:
+        config['default_model'] = args.buffer
+
+    client = Groq(
+        api_key=os.environ.get("GROQ_API_KEY"),
+    )
+    print(config)
+    buffer_contents = parse_user_buffer(config['default_buffer'])
     buffer_contents_fmtd = format_buffer_contents(buffer_contents)
-
     chat_completion = client.chat.completions.create(
         messages=[
+            {
+                "role": "system",
+                "content": config['default_system_prompt']
+            },
             {
                 "role": "user",
                 "content": buffer_contents_fmtd,
             }
         ],
-        model="llama3-70b-8192",
+        model=MODEL_LOOKUP[config['default_model']],
     )
+    print(chat_completion.model)
 
-    append_to_file('ask.md', chat_completion.choices[0].message.content)
+    append_to_file(config['default_buffer'], chat_completion.choices[0].message.content)
+
 if __name__ == "__main__": 
     main()
