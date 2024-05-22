@@ -11,5 +11,10 @@ setup(
     entry_points={
         'console_scripts': ['proompt=proompt.main:main'],
     },
+    install_requires=[
+        "tomli",
+        "tomli_w",
+        "groq"
+    ] 
 )
 
